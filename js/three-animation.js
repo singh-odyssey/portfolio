@@ -44,9 +44,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const numParticles = isMobile ? 2000 : 5000; // More particles for desktop
         
         // Adjust spread based on screen size to ensure full coverage
-        const spreadX = window.innerWidth * 2; // 200% of screen width
-        const spreadY = window.innerHeight * 2; // 200% of screen height
-        const spreadZ = 2000;
+        const spreadX = window.innerWidth * 1.5;
+        const spreadY = window.innerHeight * 1.5;
+        const spreadZ = 1500;
         
         for (let i = 0; i < numParticles; i++) {
             // Position particles to cover the entire screen area
@@ -58,9 +58,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Add velocities for organic movement
             velocities.push(
-                (Math.random() - 0.5) * 0.5,
-                (Math.random() - 0.5) * 0.5,
-                (Math.random() - 0.5) * 0.5
+                (Math.random() - 0.5) * 0.1,
+                (Math.random() - 0.5) * 0.1,
+                (Math.random() - 0.5) * 0.1
             );
             
             // Add phase for wave-like motion
