@@ -172,22 +172,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 duration: 1,
                 ease: 'power3.out'
             }, '-=0.8')
-            /* .from('.cta-buttons .btn', {
+            .from('.cta-buttons .btn', {
                 y: 50,
                 opacity: 0,
                 rotationY: -45,
                 duration: 0.8,
                 stagger: 0.2,
                 ease: 'back.out(1.7)'
-            }, '-=0.6') */
-            /* .from('.social-icon', {
+            }, '-=0.6')
+            .from('.social-icon', {
                 scale: 0,
                 opacity: 0,
                 rotation: 180,
                 duration: 0.6,
                 stagger: 0.1,
                 ease: 'back.out(1.7)'
-            }, '-=0.4') */;
+            }, '-=0.4');
 
         // Enhanced navbar animation on scroll
         gsap.to('.navbar', {
