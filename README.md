@@ -34,3 +34,14 @@ To view the website visit :
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Three.js for 3D graphics and animations
+- GSAP for smooth animations and transitions
+- Font Awesome for icons
+- Google Fonts for typography
