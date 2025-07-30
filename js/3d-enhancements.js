@@ -436,6 +436,33 @@ function optimizePerformance() {
         intensiveElements.forEach(el => {
             el.style.transform = 'none';
         });
+        
+        // Simplify skill icon animations for mobile
+        const skillItems = document.querySelectorAll('.skill-item');
+        skillItems.forEach(item => {
+            const icon = item.querySelector('.skill-icon');
+            if (icon) {
+                // Remove complex hover effects on mobile
+                item.removeEventListener('mouseenter', () => {});
+                item.removeEventListener('mouseleave', () => {});
+                
+                // Add simple mobile-friendly effects
+                item.addEventListener('touchstart', () => {
+                    item.style.transform = 'scale(0.98)';
+                    item.style.transition = 'transform 0.1s ease';
+                });
+                
+                item.addEventListener('touchend', () => {
+                    item.style.transform = 'scale(1)';
+                });
+            }
+        });
+        
+        // Optimize contact form for mobile
+        const formGroups = document.querySelectorAll('.form-group');
+        formGroups.forEach(group => {
+            group.style.transform = 'none';
+        });
     }
 }
 

@@ -140,6 +140,43 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 100);
 
+    // Initialize skill items as visible
+    setTimeout(() => {
+        const skillItems = document.querySelectorAll('.skill-item');
+        skillItems.forEach(item => {
+            item.classList.add('visible');
+        });
+    }, 100);
+
+    // Initialize contact elements as visible
+    setTimeout(() => {
+        const contactItems = document.querySelectorAll('.contact-item');
+        const contactForm = document.querySelector('.contact-form');
+        
+        contactItems.forEach(item => {
+            item.classList.add('visible');
+        });
+        
+        if (contactForm) {
+            contactForm.classList.add('visible');
+        }
+    }, 100);
+
+    // Force reset any problematic inline styles
+    setTimeout(() => {
+        // Reset skill items
+        document.querySelectorAll('.skill-item').forEach(item => {
+            item.style.opacity = '1';
+            item.style.transform = 'translateY(0)';
+        });
+        
+        // Reset contact elements
+        document.querySelectorAll('.contact-item, .contact-form').forEach(element => {
+            element.style.opacity = '1';
+            element.style.transform = 'translateY(0) translateX(0)';
+        });
+    }, 500);
+
     // Initialize GSAP animations with enhanced 3D effects
     if (typeof gsap !== 'undefined') {
         // Register ScrollTrigger plugin
@@ -541,63 +578,117 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Form submission handling
+ 
+    // Get these from https://www.emailjs.com/
+    const EMAIL_SERVICE_ID = 'service_u7gotct'; 
+    const EMAIL_TEMPLATE_ID = 'template_n2nqa2e'; 
+    const EMAIL_PUBLIC_KEY = 'zKpfJlnkdiWBY5XA7'; 
+
+    // Initialize EmailJS
+    if (typeof emailjs !== 'undefined') {
+        emailjs.init(EMAIL_PUBLIC_KEY);
+    }
+
+    // Form submission handling with EmailJS
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
         contactForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
             // Basic form validation
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const subject = document.getElementById('subject').value;
-            const message = document.getElementById('message').value;
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const subject = document.getElementById('subject').value.trim();
+            const message = document.getElementById('message').value.trim();
             
-            if (name && email && subject && message) {
-                // Here you would normally send the form data to your server
-                // For now, let's just show a success message
-                const submitBtn = contactForm.querySelector('button[type="submit"]');
-                const originalText = submitBtn.textContent;
-                
-                submitBtn.textContent = 'Sending...';
-                submitBtn.disabled = true;
-                
-                // Simulate form submission
-                setTimeout(() => {
-                    // Create success message
-                    const successMessage = document.createElement('div');
-                    successMessage.className = 'form-success';
-                    successMessage.innerHTML = `
-                        <i class="fas fa-check-circle"></i>
-                        <p>Your message has been sent successfully!</p>
-                    `;
-                    contactForm.innerHTML = '';
-                    contactForm.appendChild(successMessage);
-                    
-                    // Reset form after some time
-                    setTimeout(() => {
+            if (!name || !email || !subject || !message) {
+                showFormMessage('Please fill in all fields.', 'error');
+                return;
+            }
+
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showFormMessage('Please enter a valid email address.', 'error');
+                return;
+            }
+            
+            const submitBtn = contactForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            
+            submitBtn.textContent = 'Sending...';
+            submitBtn.disabled = true;
+            
+            // Prepare template parameters to match your EmailJS template
+            const templateParams = {
+                name: name,
+                email: email,
+                subject: subject,
+                message: message
+            };
+            
+            // Send email using EmailJS (if configured)
+            if (typeof emailjs !== 'undefined' && EMAIL_SERVICE_ID !== 'YOUR_SERVICE_ID') {
+                emailjs.send(EMAIL_SERVICE_ID, EMAIL_TEMPLATE_ID, templateParams)
+                    .then(function(response) {
+                        console.log('Email sent successfully:', response);
                         contactForm.innerHTML = `
-                            <div class="form-group">
-                                <input type="text" id="name" name="name" placeholder="Your Name" required>
-                                <label for="name">Your Name</label>
+                            <div class="form-message success" style="display: block; opacity: 1; text-align: center;">
+                                <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 20px;"></i>
+                                <h3>Thank You!</h3>
+                                <p>Your message has been sent successfully. I'll get back to you as soon as possible.</p>
                             </div>
-                            <div class="form-group">
-                                <input type="email" id="email" name="email" placeholder="Your Email" required>
-                                <label for="email">Your Email</label>
-                            </div>
-                            <div class="form-group">
-                                <input type="text" id="subject" name="subject" placeholder="Subject" required>
-                                <label for="subject">Subject</label>
-                            </div>
-                            <div class="form-group">
-                                <textarea id="message" name="message" placeholder="Your Message" required></textarea>
-                                <label for="message">Your Message</label>
-                            </div>
-                            <button type="submit" class="btn primary-btn">Send Message</button>
                         `;
-                    }, 5000);
-                }, 1500);
+                    })
+                    .catch(function(error) {
+                        console.error('Email send failed:', error);
+                        console.error('Error details:', error.text || error.message);
+                        console.error('Status:', error.status);
+                        console.error('Template params sent:', templateParams);
+                        showFormMessage('Sorry, there was an error sending your message. Please try again or contact me directly.', 'error');
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                    });
+            } else {
+                // Fallback: Show instructions for direct contact
+                setTimeout(() => {
+                    showFormMessage('EmailJS not configured. Please contact me directly at adityasingh@tutanota.de', 'info');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }, 1000);
             }
         });
+    }
+
+    // Helper function to show form messages
+    function showFormMessage(message, type) {
+        // Remove existing messages
+        const existingMessage = contactForm.querySelector('.form-message');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `form-message ${type}`;
+        
+        let icon = 'fas fa-info-circle';
+        if (type === 'success') icon = 'fas fa-check-circle';
+        if (type === 'error') icon = 'fas fa-exclamation-circle';
+        
+        messageDiv.innerHTML = `
+            <i class="${icon}"></i>
+            <p>${message}</p>
+        `;
+        
+        contactForm.insertBefore(messageDiv, contactForm.firstChild);
+        
+        // Auto-remove success/info messages after 5 seconds
+        if (type === 'success' || type === 'info') {
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.remove();
+                }
+            }, 5000);
+        }
     }
 });

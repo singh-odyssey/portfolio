@@ -140,6 +140,43 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 100);
 
+    // Initialize skill items as visible
+    setTimeout(() => {
+        const skillItems = document.querySelectorAll('.skill-item');
+        skillItems.forEach(item => {
+            item.classList.add('visible');
+        });
+    }, 100);
+
+    // Initialize contact elements as visible
+    setTimeout(() => {
+        const contactItems = document.querySelectorAll('.contact-item');
+        const contactForm = document.querySelector('.contact-form');
+        
+        contactItems.forEach(item => {
+            item.classList.add('visible');
+        });
+        
+        if (contactForm) {
+            contactForm.classList.add('visible');
+        }
+    }, 100);
+
+    // Force reset any problematic inline styles
+    setTimeout(() => {
+        // Reset skill items
+        document.querySelectorAll('.skill-item').forEach(item => {
+            item.style.opacity = '1';
+            item.style.transform = 'translateY(0)';
+        });
+        
+        // Reset contact elements
+        document.querySelectorAll('.contact-item, .contact-form').forEach(element => {
+            element.style.opacity = '1';
+            element.style.transform = 'translateY(0) translateX(0)';
+        });
+    }, 500);
+
     // Initialize GSAP animations with enhanced 3D effects
     if (typeof gsap !== 'undefined') {
         // Register ScrollTrigger plugin
