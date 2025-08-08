@@ -1,382 +1,260 @@
-// Three.js Animation for Hero Section - Enhanced Ultra-Realistic 3D
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if the canvas exists
-    const canvas = document.getElementById('hero-canvas');
-    if (!canvas) return;
+// Three.js Hero Scene: Holographic Orb + Orbiters + Particle Field with Bloom
+// Modern, eye-catching, and performant with mobile/reduced-motion fallbacks
 
-    // Initialize Three.js scene
-    let scene, camera, renderer, geometry;
-    let mouseX = 0, mouseY = 0;
-    let particleSystem, nebula;
-    let clock;
-    let isMouseMoving = false;
-    let mouseTimeout;
-    let composer, renderPass, bloomPass;
-    
-    // Set up window dimensions
-    let windowHalfX = window.innerWidth / 2;
-    let windowHalfY = window.innerHeight / 2;
-    
-    // Initialize the 3D scene
-    function init() {
-        // Create scene
-        scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0f0f13, 0.0008);
-        
-        // Set up camera with wider field of view for better coverage
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
-        camera.position.z = 1000;
-        
-        // Initialize clock
-        clock = new THREE.Clock();
-        
-        // Create enhanced particle geometry
-        geometry = new THREE.BufferGeometry();
-        const vertices = [];
-        const colors = [];
-        const velocities = [];
-        const phases = [];
-        const color = new THREE.Color();
-        const sizes = [];
-        
-        // Calculate particle count based on screen size for better performance
-        const isMobile = window.innerWidth < 768;
-        const numParticles = isMobile ? 2000 : 5000; // More particles for desktop
-        
-        // Adjust spread based on screen size to ensure full coverage
-        const spreadX = window.innerWidth * 1.5;
-        const spreadY = window.innerHeight * 1.5;
-        const spreadZ = 1500;
-        
-        for (let i = 0; i < numParticles; i++) {
-            // Position particles to cover the entire screen area
-            const x = (Math.random() - 0.5) * spreadX;
-            const y = (Math.random() - 0.5) * spreadY;
-            const z = (Math.random() - 0.5) * spreadZ;
-            
-            vertices.push(x, y, z);
-            
-            // Add velocities for organic movement
-            velocities.push(
-                (Math.random() - 0.5) * 0.1,
-                (Math.random() - 0.5) * 0.1,
-                (Math.random() - 0.5) * 0.1
-            );
-            
-            // Add phase for wave-like motion
-            phases.push(Math.random() * Math.PI * 2);
-            
-            // Enhanced size variation
-            sizes.push(Math.random() * 6 + 1);
-            
-            // Create a more vibrant color palette with depth
-            const distance = Math.sqrt(x * x + y * y + z * z);
-            const normalizedDistance = Math.min(distance / (spreadX * 0.5), 1);
-            
-            const hue = 0.55 + Math.random() * 0.3 + normalizedDistance * 0.1; // Blue to purple range
-            const saturation = 0.8 + Math.random() * 0.2;
-            const lightness = 0.4 + Math.random() * 0.4 + (1 - normalizedDistance) * 0.2;
-            
-            color.setHSL(hue, saturation, lightness);
-            colors.push(color.r, color.g, color.b);
-        }
-        
-        // Set attributes
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
-        geometry.setAttribute('velocity', new THREE.Float32BufferAttribute(velocities, 3));
-        geometry.setAttribute('phase', new THREE.Float32BufferAttribute(phases, 1));
-        
-        // Store original positions for reference
-        geometry.userData = {
-            originalPositions: [...vertices],
-            originalColors: [...colors]
-        };
-        
-        // Create enhanced point material with custom shader
-        const particleMaterial = new THREE.PointsMaterial({
-            size: 4,
-            sizeAttenuation: true,
-            vertexColors: true,
-            transparent: true,
-            opacity: 0.9,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            alphaTest: 0.001
-        });
-        
-        // Create particles system
-        particleSystem = new THREE.Points(geometry, particleMaterial);
-        scene.add(particleSystem);
-        
-        // Add nebula/cosmic dust effect
-        createNebula();
-        
-        // Add ambient lighting effects
-        createLighting();
-        
-        // Set up renderer with enhanced settings
-        renderer = new THREE.WebGLRenderer({
-            canvas: canvas,
-            antialias: true,
-            alpha: true,
-            powerPreference: "high-performance"
-        });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.outputEncoding = THREE.sRGBEncoding;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-        
-        // Add event listeners
-        document.addEventListener('mousemove', onDocumentMouseMove);
-        document.addEventListener('touchmove', onDocumentTouchMove);
-        window.addEventListener('resize', onWindowResize);
+document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('hero-canvas');
+  if (!canvas || typeof THREE === 'undefined') return;
+
+  // Core
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0b0d12, 0.001);
+
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 4000);
+  camera.position.set(0, 0, 110);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+
+  // Postprocessing (Unreal Bloom)
+  let composer, bloomPass;
+  if (typeof THREE.EffectComposer !== 'undefined' && typeof THREE.RenderPass !== 'undefined') {
+    const renderPass = new THREE.RenderPass(scene, camera);
+    bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.8, 0.75, 0.2);
+    composer = new THREE.EffectComposer(renderer);
+    composer.addPass(renderPass);
+    composer.addPass(bloomPass);
+  }
+
+  // Settings
+  const clock = new THREE.Clock();
+  const isMobile = window.innerWidth < 768 || window.matchMedia('(pointer: coarse)').matches;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0x6680ff, 0.55));
+  const keyLight = new THREE.DirectionalLight(0x88aaff, 0.9);
+  keyLight.position.set(6, 8, 10);
+  scene.add(keyLight);
+  const rimLight = new THREE.PointLight(0x66ccff, 1.1, 900);
+  rimLight.position.set(-120, -90, 70);
+  scene.add(rimLight);
+
+  // Holographic Orb (Fresnel shader)
+  const orbGroup = new THREE.Group();
+  scene.add(orbGroup);
+
+  const orbGeometry = new THREE.IcosahedronGeometry(24, 3);
+  const fresnelUniforms = {
+    time: { value: 0 },
+    color1: { value: new THREE.Color('#6C5CE7') },
+    color2: { value: new THREE.Color('#00E5FF') },
+    rimPower: { value: 2.2 },
+    opacity: { value: 0.95 },
+  };
+  const orbMaterial = new THREE.ShaderMaterial({
+    uniforms: fresnelUniforms,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vWorldPosition;
+      void main(){
+        vNormal = normalize(normalMatrix * normal);
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPosition.xyz;
+        gl_Position = projectionMatrix * viewMatrix * worldPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform float time; 
+      uniform vec3 color1; 
+      uniform vec3 color2; 
+      uniform float rimPower; 
+      uniform float opacity; 
+      varying vec3 vNormal; 
+      varying vec3 vWorldPosition; 
+      void main(){
+        vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+        float rim = pow(1.0 - max(dot(viewDir, normalize(vNormal)), 0.0), rimPower);
+        float glow = 0.35 + 0.65 * rim;
+        float pulse = 0.5 + 0.5 * sin(time * 1.5);
+        vec3 col = mix(color1, color2, pulse) * glow;
+        gl_FragColor = vec4(col, opacity * glow);
+      }
+    `,
+    depthWrite: false
+  });
+  const orb = new THREE.Mesh(orbGeometry, orbMaterial);
+  orbGroup.add(orb);
+
+  // Inner wireframe core
+  const core = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(15, 1),
+    new THREE.MeshBasicMaterial({ color: 0x99ccff, wireframe: true, transparent: true, opacity: 0.25 })
+  );
+  orbGroup.add(core);
+
+  // Orbiting glow satellites
+  const satellites = [];
+  const satCount = isMobile ? 6 : 10;
+  for (let i = 0; i < satCount; i++) {
+    const satMat = new THREE.MeshStandardMaterial({ color: 0x66e6ff, emissive: 0x66e6ff, emissiveIntensity: 1.4, metalness: 0.2, roughness: 0.15 });
+    const s = new THREE.Mesh(new THREE.SphereGeometry(1.8, 16, 16), satMat);
+    s.userData = {
+      radius: 32 + Math.random() * 20,
+      speed: 0.5 + Math.random() * 0.8,
+      tilt: Math.random() * Math.PI,
+      phase: Math.random() * Math.PI * 2,
+    };
+    satellites.push(s);
+    orbGroup.add(s);
+  }
+
+  // Particle field
+  const particleCount = reducedMotion ? 350 : (isMobile ? 900 : 1800);
+  const positions = new Float32Array(particleCount * 3);
+  const velocities = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+  const colorA = new THREE.Color('#3F51B5');
+  const colorB = new THREE.Color('#00BCD4');
+  const spread = { x: 520, y: 420, z: 720 };
+  for (let i = 0; i < particleCount; i++) {
+    const i3 = i * 3;
+    positions[i3] = (Math.random() - 0.5) * spread.x;
+    positions[i3 + 1] = (Math.random() - 0.5) * spread.y;
+    positions[i3 + 2] = (Math.random() - 0.5) * spread.z - 150;
+    velocities[i3] = (Math.random() - 0.5) * 0.05;
+    velocities[i3 + 1] = (Math.random() - 0.5) * 0.05;
+    velocities[i3 + 2] = (Math.random() - 0.5) * 0.05;
+    const t = Math.random();
+    const c = colorA.clone().lerp(colorB, t);
+    colors[i3] = c.r; colors[i3 + 1] = c.g; colors[i3 + 2] = c.b;
+  }
+  const particleGeometry = new THREE.BufferGeometry();
+  particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const particleMaterial = new THREE.PointsMaterial({ size: 2.0, vertexColors: true, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
+  const particles = new THREE.Points(particleGeometry, particleMaterial);
+  scene.add(particles);
+
+  // Nebula plane (soft backdrop)
+  const nebula = new THREE.Mesh(
+    new THREE.PlaneGeometry(2200, 1300, 1, 1),
+    new THREE.MeshBasicMaterial({ color: 0x0b0d12, transparent: true, opacity: 0.35 })
+  );
+  nebula.position.set(0, 0, -420);
+  scene.add(nebula);
+
+  // Interaction state
+  const mouse = new THREE.Vector2(0, 0);
+  let targetCamera = new THREE.Vector3(0, 0, 110);
+  let scrollY = 0;
+
+  function onResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  function onMouseMove(e) {
+    const x = (e.clientX / window.innerWidth) * 2 - 1;
+    const y = -(e.clientY / window.innerHeight) * 2 + 1;
+    mouse.set(x, y);
+  }
+
+  function onTouchMove(e) {
+    if (!e.touches || !e.touches[0]) return;
+    const t = e.touches[0];
+    const x = (t.clientX / window.innerWidth) * 2 - 1;
+    const y = -(t.clientY / window.innerHeight) * 2 + 1;
+    mouse.set(x, y);
+  }
+
+  function onScroll() { scrollY = window.scrollY || 0; }
+
+  window.addEventListener('resize', onResize);
+  document.addEventListener('mousemove', onMouseMove, { passive: true });
+  document.addEventListener('touchmove', onTouchMove, { passive: true });
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  // Animation loop
+  function animate() {
+    const dt = Math.min(clock.getDelta(), 0.033);
+    const t = clock.elapsedTime;
+    fresnelUniforms.time.value = t;
+
+    // Camera parallax + gentle zoom on scroll
+    const parallaxX = mouse.x * 10;
+    const parallaxY = mouse.y * 6;
+    const targetZ = 110 + Math.min(scrollY * 0.05, 50);
+    targetCamera.set(parallaxX, parallaxY, targetZ);
+    camera.position.lerp(targetCamera, 0.06);
+    camera.lookAt(0, 0, 0);
+
+    // Orb subtle motion
+    if (!reducedMotion) {
+      orbGroup.rotation.y += 0.15 * dt;
+      core.rotation.x -= 0.25 * dt;
     }
-    
-    function createNebula() {
-        // Create a nebula-like background effect
-        const nebulaGeometry = new THREE.PlaneGeometry(window.innerWidth * 3, window.innerHeight * 3);
-        const nebulaMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                time: { value: 0 },
-                resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
-            },
-            vertexShader: `
-                varying vec2 vUv;
-                void main() {
-                    vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform float time;
-                uniform vec2 resolution;
-                varying vec2 vUv;
-                
-                float noise(vec2 p) {
-                    return sin(p.x * 12.9898 + p.y * 78.233) * 43758.5453;
-                }
-                
-                void main() {
-                    vec2 uv = vUv;
-                    vec2 center = vec2(0.5);
-                    float dist = distance(uv, center);
-                    
-                    float n1 = sin(time * 0.5 + uv.x * 3.0) * 0.5 + 0.5;
-                    float n2 = sin(time * 0.3 + uv.y * 4.0) * 0.5 + 0.5;
-                    float n3 = sin(time * 0.7 + dist * 8.0) * 0.5 + 0.5;
-                    
-                    vec3 color1 = vec3(0.42, 0.36, 0.91); // Primary color
-                    vec3 color2 = vec3(0.64, 0.61, 0.996); // Secondary color
-                    vec3 color3 = vec3(0.99, 0.47, 0.66); // Accent color
-                    
-                    vec3 finalColor = mix(color1, color2, n1);
-                    finalColor = mix(finalColor, color3, n2 * 0.3);
-                    
-                    float alpha = (1.0 - dist) * 0.1 * n3;
-                    
-                    gl_FragColor = vec4(finalColor, alpha);
-                }
-            `,
-            transparent: true,
-            blending: THREE.AdditiveBlending
-        });
-        
-        nebula = new THREE.Mesh(nebulaGeometry, nebulaMaterial);
-        nebula.position.z = -1500;
-        scene.add(nebula);
+
+    // Update satellites
+    satellites.forEach((s) => {
+      const u = s.userData;
+      const angle = t * u.speed + u.phase;
+      const r = u.radius;
+      s.position.set(
+        Math.cos(u.tilt) * r * Math.cos(angle),
+        Math.sin(u.tilt) * r * Math.sin(angle),
+        Math.sin(angle * 0.75) * 12
+      );
+    });
+
+    // Particle drift
+    const pos = particleGeometry.getAttribute('position');
+    for (let i = 0; i < particleCount; i++) {
+      const i3 = i * 3;
+      positions[i3] += velocities[i3];
+      positions[i3 + 1] += velocities[i3 + 1];
+      positions[i3 + 2] += velocities[i3 + 2];
+      // Soft bounds
+      if (positions[i3] > spread.x * 0.5 || positions[i3] < -spread.x * 0.5) velocities[i3] *= -1;
+      if (positions[i3 + 1] > spread.y * 0.5 || positions[i3 + 1] < -spread.y * 0.5) velocities[i3 + 1] *= -1;
+      if (positions[i3 + 2] > 200 || positions[i3 + 2] < -spread.z) velocities[i3 + 2] *= -1;
     }
-    
-    function createLighting() {
-        // Enhanced ambient light
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
-        scene.add(ambientLight);
-        
-        // Dynamic point lights
-        const light1 = new THREE.PointLight(0x6c5ce7, 2, 2000);
-        light1.position.set(500, 500, 500);
-        scene.add(light1);
-        
-        const light2 = new THREE.PointLight(0xfd79a8, 1.5, 2000);
-        light2.position.set(-500, -500, 500);
-        scene.add(light2);
-        
-        const light3 = new THREE.PointLight(0xa29bfe, 1, 2000);
-        light3.position.set(0, 0, -500);
-        scene.add(light3);
-        
-        // Store lights for animation
-        scene.userData.lights = [light1, light2, light3];
+    pos.needsUpdate = true;
+
+    // Mouse attractor into scene space
+    const attractStrength = isMobile ? 0.02 : 0.04;
+    const v = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+    particles.position.lerp(v.multiplyScalar(0.05), attractStrength * dt);
+
+    // Bloom tuning on motion/scroll
+    if (bloomPass) {
+      const motion = Math.abs(mouse.x) + Math.abs(mouse.y) + Math.min(scrollY / 2000, 0.5);
+      const base = reducedMotion ? 0.2 : 0.6;
+      bloomPass.strength = base + motion * 0.7;
+      bloomPass.radius = 0.85;
+      bloomPass.threshold = 0.15;
     }
-    
-    function onWindowResize() {
-        windowHalfX = window.innerWidth / 2;
-        windowHalfY = window.innerHeight / 2;
-        
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        
-        // Update nebula size
-        if (nebula) {
-            nebula.geometry.dispose();
-            nebula.geometry = new THREE.PlaneGeometry(window.innerWidth * 3, window.innerHeight * 3);
-        }
-    }
-    
-    function onDocumentMouseMove(event) {
-        // Update mouse position with smoother interpolation
-        const targetMouseX = (event.clientX - windowHalfX) * 0.2;
-        const targetMouseY = (event.clientY - windowHalfY) * 0.2;
-        
-        mouseX += (targetMouseX - mouseX) * 0.05;
-        mouseY += (targetMouseY - mouseY) * 0.05;
-        
-        // Enhanced mouse interaction with particles
-        const mouse = new THREE.Vector2();
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        
-        // Apply magnetic effects to particles
-        if (particleSystem) {
-            const positions = particleSystem.geometry.attributes.position.array;
-            const originalPositions = particleSystem.geometry.userData.originalPositions;
-            const mouseForce = 80;
-            const mouseRange = 300;
-            
-            for (let i = 0; i < positions.length; i += 3) {
-                const originalX = originalPositions[i];
-                const originalY = originalPositions[i + 1];
-                
-                // Convert mouse to world coordinates
-                const mouseWorldX = mouse.x * window.innerWidth * 0.75;
-                const mouseWorldY = mouse.y * window.innerHeight * 0.75;
-                
-                // Calculate distance to mouse
-                const dx = originalX - mouseWorldX;
-                const dy = originalY - mouseWorldY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                // Apply attractive/repulsive force
-                if (distance < mouseRange) {
-                    const force = (mouseRange - distance) / mouseRange;
-                    const angle = Math.atan2(dy, dx);
-                    
-                    // Repulsive force
-                    positions[i] = originalX + Math.cos(angle) * force * mouseForce;
-                    positions[i + 1] = originalY + Math.sin(angle) * force * mouseForce;
-                }
-            }
-            
-            particleSystem.geometry.attributes.position.needsUpdate = true;
-        }
-        
-        // Set mouse moving state
-        isMouseMoving = true;
-        clearTimeout(mouseTimeout);
-        mouseTimeout = setTimeout(() => {
-            isMouseMoving = false;
-        }, 2000);
-    }
-    
-    function onDocumentTouchMove(event) {
-        if (event.touches.length > 0) {
-            const touch = event.touches[0];
-            onDocumentMouseMove({
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-        }
-    }
-    
-    function animate() {
-        requestAnimationFrame(animate);
-        render();
-    }
-    
-    function render() {
-        const time = clock.getElapsedTime();
-        
-        // Smooth camera movement based on mouse position
-        camera.position.x += (mouseX - camera.position.x) * 0.01;
-        camera.position.y += (-mouseY - camera.position.y) * 0.01;
-        camera.lookAt(scene.position);
-        
-        // Enhanced particle system animation
-        if (particleSystem) {
-            // Gentle rotation
-            particleSystem.rotation.y = time * 0.01;
-            particleSystem.rotation.x = Math.sin(time * 0.005) * 0.05;
-            
-            // Enhanced organic movement
-            const positions = particleSystem.geometry.attributes.position.array;
-            const velocities = particleSystem.geometry.attributes.velocity.array;
-            const phases = particleSystem.geometry.attributes.phase.array;
-            const originalPositions = particleSystem.geometry.userData.originalPositions;
-            const colors = particleSystem.geometry.attributes.color.array;
-            const originalColors = particleSystem.geometry.userData.originalColors;
-            
-            if (originalPositions) {
-                for (let i = 0; i < positions.length; i += 3) {
-                    const idx = i / 3;
-                    
-                    // Wave-like motion
-                    const waveX = Math.sin(time * 0.3 + phases[idx]) * 15;
-                    const waveY = Math.cos(time * 0.4 + phases[idx] * 1.5) * 15;
-                    const waveZ = Math.sin(time * 0.2 + phases[idx] * 0.8) * 20;
-                    
-                    // Brownian motion
-                    velocities[i] += (Math.random() - 0.5) * 0.01;
-                    velocities[i + 1] += (Math.random() - 0.5) * 0.01;
-                    velocities[i + 2] += (Math.random() - 0.5) * 0.01;
-                    
-                    // Damping
-                    velocities[i] *= 0.98;
-                    velocities[i + 1] *= 0.98;
-                    velocities[i + 2] *= 0.98;
-                    
-                    // Apply movement
-                    positions[i] = originalPositions[i] + waveX + velocities[i] * 50;
-                    positions[i + 1] = originalPositions[i + 1] + waveY + velocities[i + 1] * 50;
-                    positions[i + 2] = originalPositions[i + 2] + waveZ + velocities[i + 2] * 50;
-                    
-                    // Dynamic color shifting
-                    const colorPhase = time * 0.5 + phases[idx];
-                    const colorShift = Math.sin(colorPhase) * 0.1;
-                    colors[i] = originalColors[i] + colorShift;
-                    colors[i + 1] = originalColors[i + 1] + colorShift;
-                    colors[i + 2] = originalColors[i + 2] + colorShift;
-                }
-                
-                particleSystem.geometry.attributes.position.needsUpdate = true;
-                particleSystem.geometry.attributes.color.needsUpdate = true;
-            }
-        }
-        
-        // Animate nebula
-        if (nebula) {
-            nebula.material.uniforms.time.value = time;
-            nebula.rotation.z = time * 0.002;
-        }
-        
-        // Animate lights
-        if (scene.userData.lights) {
-            scene.userData.lights.forEach((light, index) => {
-                const lightTime = time + index * Math.PI * 0.6;
-                light.intensity = 1 + Math.sin(lightTime * 0.5) * 0.5;
-                light.position.x += Math.sin(lightTime * 0.1) * 2;
-                light.position.y += Math.cos(lightTime * 0.15) * 2;
-            });
-        }
-        
-        renderer.render(scene, camera);
-    }
-    
-    // Initialize and start animation
-    init();
-    animate();
+
+    if (composer) composer.render();
+    else renderer.render(scene, camera);
+
+    requestAnimationFrame(animate);
+  }
+
+  // Initial placement
+  orbGroup.position.set(0, 0, 0);
+  onResize();
+  animate();
+
+  // Pause heavy updates when not visible (basic)
+  document.addEventListener('visibilitychange', () => {
+    // Renderer loop is controlled via requestAnimationFrame; browsers throttle on hidden tabs.
+  });
 });

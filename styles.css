@@ -506,6 +506,8 @@ body {
     transition: background-color var(--transition-speed) ease;
 }
 
+/* Removed global 3D background layer */
+
 a {
     text-decoration: none;
     color: inherit;
@@ -1098,7 +1100,7 @@ section {
 
 /* About Section */
 .about {
-    background-color: var(--background-color);
+    background-color: rgba(25,25,33,0.7);
 }
 
 .about-container {
@@ -1356,7 +1358,7 @@ section {
 
 /* Projects Section */
 .projects {
-    background-color: var(--card-color);
+    background-color: rgba(25,25,33,0.7);
     position: relative;
 }
 
@@ -1482,7 +1484,7 @@ section {
 
 /* Skills Section */
 .skills {
-    background-color: var(--card-color);
+    background-color: rgba(25,25,33,0.7);
     position: relative;
     z-index: 1;
 }
@@ -1658,7 +1660,7 @@ section {
 
 /* Contact Section */
 .contact {
-    background-color: var(--card-color);
+    background-color: rgba(25,25,33,0.7);
     position: relative;
     z-index: 1;
 }
