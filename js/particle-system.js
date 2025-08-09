@@ -2,15 +2,22 @@
 class ParticleSystem {
     constructor() {
         this.particles = [];
-        this.particleCount = 50;
+        this.particleCount = 35; // toned down for subtlety
+        this.mouse = { x: null, y: null };
         this.init();
     }
 
     init() {
         this.createParticleContainer();
         this.createParticles();
-        this.createStars();
-        this.createGlowOrbs();
+        // Disable extra star fields and glow orbs for a cleaner look
+        // this.createStars();
+        // this.createGlowOrbs();
+        // Track mouse once for interactions
+        document.addEventListener('mousemove', (e) => {
+            this.mouse.x = e.clientX;
+            this.mouse.y = e.clientY;
+        }, { passive: true });
         this.animate();
     }
 
@@ -91,24 +98,21 @@ class ParticleSystem {
     }
 
     updateParticles() {
-        // Mouse interaction with particles
-        document.addEventListener('mousemove', (e) => {
-            const particles = document.querySelectorAll('.floating-particle');
-            particles.forEach(particle => {
-                const rect = particle.getBoundingClientRect();
-                const distance = Math.sqrt(
-                    Math.pow(e.clientX - (rect.left + rect.width/2), 2) + 
-                    Math.pow(e.clientY - (rect.top + rect.height/2), 2)
-                );
-                
-                if (distance < 100) {
-                    particle.style.transform = `scale(1.5)`;
-                    particle.style.opacity = '1';
-                } else {
-                    particle.style.transform = `scale(1)`;
-                    particle.style.opacity = '0.6';
-                }
-            });
+        // Mouse interaction with particles (uses stored mouse position)
+    const particles = document.querySelectorAll('.floating-particle');
+    particles.forEach(particle => {
+            const rect = particle.getBoundingClientRect();
+            let distance = 9999;
+            if (this.mouse.x !== null) {
+                distance = Math.hypot(this.mouse.x - (rect.left + rect.width/2), this.mouse.y - (rect.top + rect.height/2));
+            }
+            if (distance < 100) {
+        particle.style.setProperty('--pScale', '1.35');
+                particle.style.opacity = '1';
+            } else {
+        particle.style.setProperty('--pScale', '1');
+                particle.style.opacity = '0.6';
+            }
         });
     }
 }
@@ -259,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         particles.forEach((particle, index) => {
             const speed = 1 + (index % 3) * 0.5;
-            particle.style.transform = `translateX(${scrollPercent * speed * 50}px)`;
+            particle.style.setProperty('--offsetX', `${scrollPercent * speed * 50}px`);
         });
     });
     

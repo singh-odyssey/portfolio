@@ -82,6 +82,8 @@ body {
     background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
     border-radius: 50%;
     opacity: 0.6;
+    --pScale: 1;
+    --offsetX: 0px;
     animation: floatParticle 15s infinite linear;
 }
 
@@ -111,7 +113,7 @@ body {
 
 @keyframes floatParticle {
     0% {
-        transform: translateY(100vh) translateX(0px) rotate(0deg);
+    transform: translateX(var(--offsetX, 0px)) translateY(100vh) rotate(0deg) scale(var(--pScale, 1));
         opacity: 0;
     }
     10% {
@@ -121,7 +123,7 @@ body {
         opacity: 0.6;
     }
     100% {
-        transform: translateY(-100px) translateX(50px) rotate(360deg);
+    transform: translateX(var(--offsetX, 0px)) translateY(-100px) rotate(360deg) scale(var(--pScale, 1));
         opacity: 0;
     }
 }
@@ -507,6 +509,30 @@ body {
 }
 
 /* Removed global 3D background layer */
+
+/* Sections WebGL background canvas */
+.webgl-sections-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0; /* behind section content but above page background */
+    opacity: 0; /* fades in when a non-hero section is active */
+    transition: opacity 0.5s ease;
+}
+
+/* Ambient particles canvas (lightweight) */
+.ambient-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+}
 
 a {
     text-decoration: none;
@@ -1580,6 +1606,28 @@ section {
 .skill-item:hover {
     transform: translateY(-10px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Subtle moving sheen on interactive 3D cards */
+.skill-item::after,
+.contact-item::after,
+.project-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.6s ease;
+    pointer-events: none;
+}
+
+.skill-item:hover::after,
+.contact-item:hover::after,
+.project-card:hover::after {
+    left: 150%;
 }
 
 .skill-icon {
